@@ -1,0 +1,46 @@
+resource "vsphere_virtual_machine" "db01" {
+  name             = "db01"
+  resource_pool_id = "${data.vsphere_resource_pool.pool.id}"
+  datastore_id     = "${data.vsphere_datastore.datastore.id}"
+
+  num_cpus = 2
+  memory   = 2048
+  guest_id = "centos7_64Guest"
+
+  network_interface {
+    network_id = "${data.vsphere_network.network.id}"
+  }
+
+  disk {
+    label = "disk0"
+    datastore_id = "${data.vsphere_datastore.datastore.id}"
+    path = "/db01/db01.vmdk"
+    attach = true
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo ${var.linux_password} | sudo -S hostname ${self.name}",
+      "sudo yum update -y",
+      "sudo yum install -y nano net-tools epel-release wget",
+      "wget http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm",
+      "sudo rpm -ivh mysql-community-release-el7-5.noarch.rpm",
+      "sudo yum update",
+      "sudo yum install -y mysql-server",
+      "sudo systemctl start mysqld",
+      "sudo systemctl enable mysqld"
+    ]
+ 
+    connection {
+      type     = "ssh"
+      user     = "${var.linux_user}"
+      password = "${var.linux_password}"
+      timeout = "1m"
+    } 
+
+  }
+  cdrom {
+    datastore_id = "${data.vsphere_datastore.datastore.id}"
+    path         = "iso/CentOS-7-x86_64-Minimal-1804.iso"
+  }
+}

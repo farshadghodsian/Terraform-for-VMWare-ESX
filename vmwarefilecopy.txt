@@ -1,0 +1,9 @@
+ resource "vsphere_file" "centos7_disk_copy" {
+   source_datacenter = "${data.vsphere_datacenter.dc.id}"
+   datacenter        = "${data.vsphere_datacenter.dc.id}"
+   source_datastore  = "${data.vsphere_datastore.datastore.name}"
+   datastore         = "${data.vsphere_datastore.datastore.name}"
+   source_file       = "/template/centos7x64.vmdk"
+   destination_file  = "/web02/web02.vmdk"
+   create_directories = true
+ }
