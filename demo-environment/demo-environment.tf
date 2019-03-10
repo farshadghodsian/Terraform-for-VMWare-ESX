@@ -43,8 +43,8 @@ resource "vsphere_virtual_machine" "web01" {
   resource_pool_id = "${data.vsphere_resource_pool.pool.id}"
   datastore_id     = "${data.vsphere_datastore.datastore.id}"
 
-  num_cpus = 1
-  memory   = 512
+  num_cpus = 2
+  memory   = 1024
   guest_id = "centos7_64Guest"
 
   network_interface {
@@ -79,14 +79,13 @@ resource "vsphere_virtual_machine" "web01" {
 
 }
 
-resource "vsphere_virtual_machine" "web02" {
-  #depends_on = ["vsphere_virtual_machine.web01"] # If you want to wait for web01 to finish before creating web02
-  name             = "web02"
+resource "vsphere_virtual_machine" "db01" {
+  name             = "db01"
   resource_pool_id = "${data.vsphere_resource_pool.pool.id}"
   datastore_id     = "${data.vsphere_datastore.datastore.id}"
 
-  num_cpus = 1
-  memory   = 512
+  num_cpus = 2
+  memory   = 2048
   guest_id = "centos7_64Guest"
 
   network_interface {
@@ -96,7 +95,7 @@ resource "vsphere_virtual_machine" "web02" {
   disk {
     label = "disk0"
     datastore_id = "${data.vsphere_datastore.datastore.id}"
-    path = "/web02/web02.vmdk"
+    path = "/db01/db01.vmdk"
     attach = true
   }
 
@@ -104,7 +103,13 @@ resource "vsphere_virtual_machine" "web02" {
     inline = [
       "echo ${var.linux_password} | sudo -S hostname ${self.name}",
       "sudo yum update -y",
-      "sudo yum install -y nano net-tools epel-release"
+      "sudo yum install -y nano net-tools epel-release wget",
+      "wget http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm",
+      "sudo rpm -ivh mysql-community-release-el7-5.noarch.rpm",
+      "sudo yum update -y",
+      "sudo yum install -y mysql-server",
+      "sudo systemctl start mysqld",
+      "sudo systemctl enable mysqld"
     ]
  
     connection {
@@ -120,6 +125,8 @@ resource "vsphere_virtual_machine" "web02" {
     path         = "iso/CentOS-7-x86_64-Minimal-1804.iso"
   }
 }
+
+
 
 ####################
 ##   Snapshots    ##
@@ -148,11 +155,11 @@ resource "vsphere_virtual_machine_snapshot" "web01_init_snap" {
 output "web01_ip" {
   depends_on=["vsphere_virtual_machine.web01"]
   value = "${vsphere_virtual_machine.web01.default_ip_address}"
-  description = "IP to access website on web01"
+  description = "IP to access web01"
 }
 
-output "web02_ip" {
-  depends_on=["vsphere_virtual_machine.web02"]
-  value = "${vsphere_virtual_machine.web02.default_ip_address}"
-  description = "IP to access website on web01"
+output "db01_ip" {
+  depends_on=["vsphere_virtual_machine.db01"]
+  value = "${vsphere_virtual_machine.db01.default_ip_address}"
+  description = "IP to access db01"
 }
