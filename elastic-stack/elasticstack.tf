@@ -38,12 +38,34 @@ data "vsphere_network" "network" {
 ##    VM Infrastructure    ##
 #############################
 
+resource "vsphere_file" "centos7_flat_copy" {
+   source_datacenter = "${data.vsphere_datacenter.dc.id}"
+   datacenter        = "${data.vsphere_datacenter.dc.id}"
+   source_datastore  = "${data.vsphere_datastore.datastore.name}"
+   datastore         = "${data.vsphere_datastore.datastore.name}"
+   source_file       = "/templates/centos7x64-flat.vmdk"
+   destination_file  = "/elk01/centos7x64-flat.vmdk"
+   create_directories = true
+ }
+
+resource "vsphere_file" "centos7_vmdk_copy" {
+   depends_on=["vsphere_file.centos7_flat_copy"]
+   source_datacenter = "${data.vsphere_datacenter.dc.id}"
+   datacenter        = "${data.vsphere_datacenter.dc.id}"
+   source_datastore  = "${data.vsphere_datastore.datastore.name}"
+   datastore         = "${data.vsphere_datastore.datastore.name}"
+   source_file       = "/templates/vmdk/centos7x64.vmdk"
+   destination_file  = "/elk01/elk01.vmdk"
+   #create_directories = true
+ }
+
 resource "vsphere_virtual_machine" "elk01" {
+  depends_on=["vsphere_file.centos7_vmdk_copy"]
   name             = "elk01"
   resource_pool_id = "${data.vsphere_resource_pool.pool.id}"
   datastore_id     = "${data.vsphere_datastore.datastore.id}"
 
-  num_cpus = 4
+  num_cpus = 2
   memory   = 4096
   guest_id = "centos7_64Guest"
 
